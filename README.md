@@ -9,7 +9,7 @@ exonstat
 
 ##input
 
-One gff file which contains exon entries (it may contain other stuff as well)
+One gff file which contains exon and CDS entries (it may contain other stuff as well)
 
 ##output
 
@@ -18,10 +18,13 @@ A tab-delimited file with the following columns:
  1. transcript id
  1. exon number
  1. exon length
- 1. exon phase
+ 1. exon 5' phase
+ 1. exon 3' phase
  1. exon strand
  1. exon start relative to gene
  1. absolute exon start
+
+Phase is only defined if the exon boundary is inside a coding region.
 
 exonphaser
 ==========
@@ -38,7 +41,8 @@ A tab-delimited file with the following columns:
  1. transcript id
  1. exon number
  1. exon length
- 1. exon phase
+ 1. exon 5' phase
+ 1. exon 3' phase
  1. interval start relative to exon
  1. interval end relative to exon
  1. interval start relative to gene
