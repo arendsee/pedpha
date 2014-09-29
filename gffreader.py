@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
 '''
-Assumptions about gff format:
-1) Has types 'gene', 'mRNA', 'exon', and 'CDS'
-2) These are all ordered in Phytozome style
-3) Exons are ordered according to gene beginning not absolute
+Assumes gff3 files follow the phytozome/metazom convetions. Any deviance from
+this format should instantly kill the program. See README.
 '''
 
 import re
