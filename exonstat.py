@@ -4,5 +4,9 @@
 This is currently only tested for phytozome10 formatted *.gene_exons.gff3 files
 '''
 
-if __name__ == '__main__':
-    pass
+import lib.gffreader as reader
+import sys
+
+for gene in reader.gff_reader(sys.stdin):
+    for line in gene.tostr():
+        print(line)
