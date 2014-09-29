@@ -26,52 +26,12 @@ def a_is_within_b(a, b):
     is_upperbounded = bool(max(a) <= max(b))
     return(is_lowerbounded and is_upperbounded)
 
-
-
 def parse_desc(desc):
     return re.sub('^ID=([^;]+).*', '\\1', desc).strip()
 
-def gff_reader(gfffile):
-    g = None
-    for line in gfffile:
-        d = line2gffdict(line)
-        if not d:
-            continue
-        ident = parse_desc(d['desc'])
-
-        # Assert the new element is properly placed within the gene
-        if g and d['type'] in ('mRNA', 'CDS', 'exon'):
-            assert d['strand'] == g.strand, \
-                    "All gene elements must be on same strand:\n%s" % line
-            assert a_is_within_b(d['bounds'], g.bounds), \
-                   "All gene elements must be within gene boundaries gene:\n%s" % line
-
-        if d['type'] == 'gene':
-            if g:
-                yield g
-            g = Gene(ident, d['seqid'], d['bounds'], d['strand'])
-        elif d['type'] == 'mRNA':
-            mrna = mRNA(ident, d['bounds'])
-            try:
-                g.add_mRNA(mrna)
-            except NameError:
-                sys.exit('No gene entry for this mRNA')
-        elif d['type'] == 'exon':
-            exon = Exon(ident, d['bounds'])
-            g.mRNAs[-1].add_exon(exon)
-            try:
-                assert a_is_downstream_of_b(exon.bounds[0], g.mRNAs[-1].exons[-2].bounds[1], g.strand), \
-                        "Exons must be ordered:\n%s" % line
-            except IndexError:
-                pass
-        elif d['type'] == 'CDS':
-            g.mRNAs[-1].exons[-1].CDS = CDS(ident, d['bounds'])
-            assert a_is_within_b(d['bounds'], g.mRNAs[-1].exons[-1].bounds), \
-                   "CDS must be within exon"
-    try:
-        yield g
-    except NameError:
-        pass
+def format_warning(msg, line):
+    warnmsg = "GFF format error, skipping offending gene - %s:\n%s"
+    print(warnmsg % (msg, line), file=sys.stderr)
 
 def line2gffdict(line):
     row = line.split('\t')
@@ -84,6 +44,74 @@ def line2gffdict(line):
     else:
         out = None
     return out
+
+
+def gff_reader(gfffile):
+    g = None
+    for line in gfffile:
+        line.strip()
+        broken = False
+        d = line2gffdict(line)
+        if not d:
+            continue
+        ident = parse_desc(d['desc'])
+
+        # ASSERT the new element is properly placed within the gene
+        if g and d['type'] in ('mRNA', 'CDS', 'exon'):
+            if d['strand'] != g.strand:
+                format_warning("All gene elements must be on same strand", line)
+                broken = True
+            elif not a_is_within_b(d['bounds'], g.bounds):
+                format_warning("All gene elements must be within gene boundaries gene", line)
+                broken = True
+            if broken:
+                g = None
+                continue
+
+        # If gene - yield current gene and create new one
+        if d['type'] == 'gene':
+            if g:
+                yield g
+            g = Gene(ident, d['seqid'], d['bounds'], d['strand'])
+
+        elif d['type'] == 'mRNA' and g:
+            mrna = mRNA(ident, d['bounds'], g.strand)
+            g.add_mRNA(mrna)
+            # ASSERT mRNA is within gene
+            if not a_is_within_b(mrna.bounds, g.bounds):
+                format_warning("mRNA must be within gene bounds", line)
+                broken = True
+
+        elif d['type'] == 'exon' and g:
+            exon = Exon(ident, d['bounds'])
+            g.mRNAs[-1].add_exon(exon)
+            # ASSERT exon is within mRNA
+            if not a_is_within_b(exon.bounds, g.mRNAs[-1].bounds):
+                format_warning("Exons must be within parent mRNA bounds", line)
+                broken = True
+            try:
+                # ASSERT the exons are ordered (1 .. n), whether start
+                # positions are increasing or decreasing depends on the strand
+                if not a_is_downstream_of_b(exon.bounds[0], g.mRNAs[-1].exons[-2].bounds[1], g.strand):
+                    format_warning("Exons must be ordered", line)
+                    broken = True
+            except IndexError:
+                pass
+
+        elif d['type'] == 'CDS' and g:
+            g.mRNAs[-1].exons[-1].CDS = CDS(ident, d['bounds'])
+            # ASSERT CDS is within an exon
+            if not a_is_within_b(d['bounds'], g.mRNAs[-1].exons[-1].bounds):
+                format_warning("CDS must be within exon", line)
+                broken = True
+
+        # If any of the assertions failed, nullify current gene
+        if broken:
+            g = None
+
+    if g:
+        yield g
+
 
 class Gene:
     def __init__(self, ident, seqid, bounds, strand):
@@ -104,9 +132,10 @@ class Gene:
         self.mRNAs.append(mrna)
 
 class mRNA:
-    def __init__(self, ident, bounds, tid=None):
+    def __init__(self, ident, bounds, strand, tid=None):
         self.ident = ident
         self.bounds = bounds
+        self.strand = strand
         self.tid = tid
         self.exons = []
 
@@ -129,10 +158,11 @@ class mRNA:
 
     def calculate_phases(self):
         cds_length = 0
+        isplus = bool(self.strand == "+")
         for exon in self.exons:
             if exon.CDS:
-                estart, estop = exon.bounds
-                cstart, cstop = exon.CDS.bounds
+                estart, estop = exon.bounds if isplus else reversed(exon.bounds)
+                cstart, cstop = exon.CDS.bounds if isplus else reversed(exon.CDS.bounds)
                 new_length = cds_length + abs(cstop - cstart) + 1
                 if cstart == estart:
                     p5 = cds_length % 3
