@@ -58,12 +58,21 @@ def gff_reader(gfffile):
 
         # ASSERT the new element is properly placed within the gene
         if g and d['type'] in ('mRNA', 'CDS', 'exon'):
-            if d['strand'] != g.strand:
+            # ASSERT children are on same strand as parent gene
+            if not d['strand'] == g.strand:
                 format_warning("All gene elements must be on same strand", line)
                 broken = True
-            elif not a_is_within_b(d['bounds'], g.bounds):
+            # ASSERT the seqid, i.e. the sequence to which the gff maps the
+            # entry, is same in parent and child
+            if not d['seqid'] == g.seqid:
+                format_warning("mRNA is not from same sequence as expected parent", line)
+                broken = True
+            # ASSERT child is within the parent interval
+            if not a_is_within_b(d['bounds'], g.bounds):
                 format_warning("All gene elements must be within gene boundaries gene", line)
                 broken = True
+
+            # IF any test failed, destroy gene and continue
             if broken:
                 g = None
                 continue
