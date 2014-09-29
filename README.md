@@ -59,6 +59,7 @@ if anything goes wrong. Currently pedpha works only with gff files that are
 formatted exactly like the JGI phytozome/metazome files.
 
  1. There must be the following structures:
+```
  gene -
       |- mRNA -
               | - exon
@@ -68,6 +69,7 @@ formatted exactly like the JGI phytozome/metazome files.
       |- mRNA -
               | - exon
               | - CDS
+```
  1. col4 < col5 (i.e. start < stop) even on minus strand
  1. exons are ordered 5' to 3', biological order. I.e. minus and plus strands are in opposite order
  1. element identifiers are extracted from /ID=([^;]+)/ patterns in the 9th column
