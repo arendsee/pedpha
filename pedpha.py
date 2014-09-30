@@ -4,6 +4,8 @@ import lib.gffreader as reader
 import sys
 import argparse
 
+__version__ = "1.0.0"
+
 class Intervals:
     def __init__(self, data, delimiter=None):
         self.intervals = self._read_data(data, delimiter)
@@ -38,10 +40,16 @@ class Intervals:
 
 
 def parse(argv=None):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='pedpha')
+    parser.add_argument(
+        '-v', '--version',
+        action='version',
+        version='%(prog)s {}'.format(__version__))
     parser.add_argument(
         '-i', '--intervals',
-        help="File containing protein intervals (mRNA_ident, interval_ident, start, stop)",
+        help="""File containing protein intervals
+             (mRNA_ident, interval_ident, start, stop)
+             where columns are delimited by DEL (whitespace by default).""",
         metavar="INTER",
         type=argparse.FileType('r')
     )
@@ -53,7 +61,8 @@ def parse(argv=None):
     )
     parser.add_argument(
         '-d', '--delimiter',
-        help="INTER file delimiter (defaults to whitespace)"
+        help="INTER file delimiter (defaults to whitespace)",
+        metavar="DEL"
     )
 
     args = parser.parse_args(argv)
