@@ -15,13 +15,18 @@ class Intervals:
             try:
                 out[row[0]] = row[1:4]
                 out[row[0]][1:3] = [int(s) for s in out[row[0]][1:3]]
+                if any([x < 1 for x in out[row[0]][1:3]]):
+                    raise ValueError
             except IndexError:
                 sys.exit("Each interval line must have 4 columns")
+            except ValueError:
+                sys.exit("Interval coordinants must be integers greater than 0")
         return(out)
 
     def get_bounds(self, ident):
         try:
-            return(sorted(3*x for x in self.intervals[ident][1:3]))
+            bounds = sorted(to_dna_interval(self.intervals[ident][1:3]))
+            return(bounds)
         except KeyError:
             return(None)
 
@@ -31,6 +36,14 @@ class Intervals:
         except KeyError:
             return(None)
 
+def to_dna_interval(x):
+    '''
+    x is an interval (x1, x2) on a protein
+    Where x1 and x2 are integers greater than 0 and x2 >= x1
+    '''
+    x = [(i - 1)*3 + 1 for i in x]
+    x[1] += 2
+    return(x)
 
 def parse(argv=None):
     parser = argparse.ArgumentParser()
@@ -94,7 +107,15 @@ def phaser(gff, intervals, delimiter=None):
                 a,b = get_overlap(bounds, exon.CDS.bounds)
 
                 if a and b:
-                    yield tuple([inter.get_ident(mrna.ident), mrna.ident, exon.num, gene.strand] + exon.bounds + [a, b])
+                    yield (inter.get_ident(mrna.ident),
+                           mrna.ident,
+                           exon.num,
+                           gene.strand,
+                           exon.bounds[0],
+                           exon.bounds[1],
+                           a,
+                           b
+                          )
 
                 bounds = [x - cds_length for x in bounds]
 
