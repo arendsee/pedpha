@@ -114,7 +114,8 @@ def phaser(gff, intervals, delimiter=None):
                            exon.bounds[0],
                            exon.bounds[1],
                            a,
-                           b
+                           b,
+                           '%s-%s' % exon.phase
                           )
 
                 bounds = [x - cds_length for x in bounds]

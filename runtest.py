@@ -29,6 +29,7 @@ def readgff(gfflist, addnew=True):
                 out.append(line)
     return(out)
 
+
 class Test_gffreader(unittest.TestCase):
     def setUp(self):
         self.good = [
@@ -251,22 +252,6 @@ def ready_phaser(gfflist, intervals):
     out = list(exonphaser.phaser(gff, intervals))
     return(out)
 
-class Test_to_dna_coor(unittest.TestCase):
-    def test_equal(self):
-        self.assertEqual(exonphaser.to_dna_interval([1,1]), [1,3])
-        self.assertEqual(exonphaser.to_dna_interval([1,2]), [1,6])
-        self.assertEqual(exonphaser.to_dna_interval([2,3]), [4,9])
-class Test_get_overlap(unittest.TestCase):
-    def test_within(self):
-        self.assertEqual(exonphaser.get_overlap([1,5], [100, 104]), (100, 104))
-        self.assertEqual(exonphaser.get_overlap([1,4], [100, 104]), (100, 103))
-        self.assertEqual(exonphaser.get_overlap([2,4], [100, 104]), (101, 103))
-        self.assertEqual(exonphaser.get_overlap([2,2], [100, 104]), (101, 101))
-    def test_rightwards(self):
-        self.assertEqual(exonphaser.get_overlap([1,10], [100, 104]), (100, 104))
-        self.assertEqual(exonphaser.get_overlap([5,10], [100, 104]), (104, 104))
-    def test_beyond(self):
-        self.assertEqual(exonphaser.get_overlap([6,10], [100, 104]), (None, None))
 
 class Test_phaser(unittest.TestCase):
     def setUp(self):
@@ -285,7 +270,7 @@ class Test_phaser(unittest.TestCase):
 
     def test_single_exon(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 2"]),
-                         [('z', 'a.1', 2, '+', 110, 200, 150, 155)])
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, ".-.")])
 
     def test_bad_interval(self):
         self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z 0   1\n"])
@@ -293,6 +278,23 @@ class Test_phaser(unittest.TestCase):
         self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z 0.1 1\n"])
         self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z -1  1\n"])
         self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z a   1\n"])
+
+class Test_to_dna_coor(unittest.TestCase):
+    def test_equal(self):
+        self.assertEqual(exonphaser.to_dna_interval([1,1]), [1,3])
+        self.assertEqual(exonphaser.to_dna_interval([1,2]), [1,6])
+        self.assertEqual(exonphaser.to_dna_interval([2,3]), [4,9])
+class Test_get_overlap(unittest.TestCase):
+    def test_within(self):
+        self.assertEqual(exonphaser.get_overlap([1,5], [100, 104]), (100, 104))
+        self.assertEqual(exonphaser.get_overlap([1,4], [100, 104]), (100, 103))
+        self.assertEqual(exonphaser.get_overlap([2,4], [100, 104]), (101, 103))
+        self.assertEqual(exonphaser.get_overlap([2,2], [100, 104]), (101, 101))
+    def test_rightwards(self):
+        self.assertEqual(exonphaser.get_overlap([1,10], [100, 104]), (100, 104))
+        self.assertEqual(exonphaser.get_overlap([5,10], [100, 104]), (104, 104))
+    def test_beyond(self):
+        self.assertEqual(exonphaser.get_overlap([6,10], [100, 104]), (None, None))
 
 
 if __name__ == '__main__':
