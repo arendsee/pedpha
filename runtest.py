@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 import lib.gffreader as gffreader
+import exonphaser
 import unittest
 import os
+
+# ================
+# gff_reader tests
+# ================
 
 def readgff(gfflist):
     # If the input is a list of lists, join them
@@ -228,6 +233,43 @@ class Test_format_checkint(unittest.TestCase):
         ]
         self.assertEqual(readgff(test), [])
 
+
+# ================
+# exonphaser tests
+# ================
+
+class Test_get_overlap(unittest.TestCase):
+    def test_within(self):
+        self.assertEqual(exonphaser.get_overlap([1,5], [100, 104]), (100, 104))
+        self.assertEqual(exonphaser.get_overlap([1,4], [100, 104]), (100, 103))
+        self.assertEqual(exonphaser.get_overlap([2,4], [100, 104]), (101, 103))
+        self.assertEqual(exonphaser.get_overlap([2,2], [100, 104]), (101, 101))
+    def test_rightwards(self):
+        self.assertEqual(exonphaser.get_overlap([1,10], [100, 104]), (100, 104))
+        self.assertEqual(exonphaser.get_overlap([5,10], [100, 104]), (104, 104))
+    def test_beyond(self):
+        self.assertEqual(exonphaser.get_overlap([6,10], [100, 104]), (None, None))
+
+class Test_phaser(unittest.TestCase):
+    def setUp(self):
+        self.gff = [
+            ['s1', '.', 'gene', '1', '1000', '.', '+', '.', 'ID=a'],
+            ['s1', '.', 'mRNA', '1', '1000', '.', '+', '.', 'ID=a.1'],
+            ['s1', '.', 'exon', '100', '109', '.', '+', '.', 'ID=a.1.e1'],
+            ['s1', '.', 'exon', '110', '200', '.', '+', '.', 'ID=a.1.e2'],
+            ['s1', '.', 'CDS', '150', '200', '.', '+', '.', 'ID=a.1.c1'],
+            ['s1', '.', 'exon', '300', '400', '.', '+', '.', 'ID=a.1.e3'],
+            ['s1', '.', 'CDS', '300', '400', '.', '+', '.', 'ID=a.1.c2'],
+            ['s1', '.', 'exon', '600', '900', '.', '+', '.', 'ID=a.1.e4'],
+            ['s1', '.', 'CDS', '600', '603', '.', '+', '.', 'ID=a.1.c3'],
+            ['s1', '.', 'exon', '910', '930', '.', '+', '.', 'ID=a.1.e5']
+        ]
+        self.gff = ['\t'.join(x) for x in self.gff]
+
+    def test_single_exon(self):
+        # TODO make it work
+        self.assertEqual(list(exonphaser.phaser(self.gff, ["a.1 z 1 2"])),
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 155)])
 
 if __name__ == '__main__':
     unittest.main()
