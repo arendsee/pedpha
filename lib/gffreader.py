@@ -51,7 +51,7 @@ def gff_reader(gfffile, errout=sys.stderr):
     valid = True
     fc = FormatChecker(errout)
     for line in gfffile:
-        line.strip()
+        line = line.strip()
         d = line2gffdict(line)
         if not d:
             continue
