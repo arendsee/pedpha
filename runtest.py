@@ -8,18 +8,23 @@ import os
 # gff_reader tests
 # ================
 
-def readgff(gfflist, addnew=True):
+def prepare_gff(gff, addnew=True):
     # If the input is a list of lists, join them
-    if gfflist and not hasattr(gfflist[0], "strip"):
-        gfflist = ["\t".join([str(e) for e in x]) for x in gfflist]
+    if gff and not hasattr(gff[0], "strip"):
+        gff = ["\t".join([str(e) for e in x]) for x in gff]
 
     # Actual input will always have newlines separating records
     if addnew:
-        gfflist = [s + "\n" for s in gfflist]
+        gff = [s + "\n" for s in gff]
+
+    return(gff)
+
+def readgff(gfflist, addnew=True):
+    gff = prepare_gff(gfflist, addnew=addnew)
 
     out = []
     with open(os.devnull, 'w') as errout:
-        for gene in gffreader.gff_reader(gfflist, errout=errout):
+        for gene in gffreader.gff_reader(gff, errout=errout):
             for line in gene.tostr():
                 out.append(line)
     return(out)
@@ -240,6 +245,17 @@ class Test_format_checkint(unittest.TestCase):
 # exonphaser tests
 # ================
 
+def ready_phaser(gfflist, intervals):
+    gff = prepare_gff(gfflist)
+    intervals = [s + "\n" for s in intervals]
+    out = list(exonphaser.phaser(gff, intervals))
+    return(out)
+
+class Test_to_dna_coor(unittest.TestCase):
+    def test_equal(self):
+        self.assertEqual(exonphaser.to_dna_interval([1,1]), [1,3])
+        self.assertEqual(exonphaser.to_dna_interval([1,2]), [1,6])
+        self.assertEqual(exonphaser.to_dna_interval([2,3]), [4,9])
 class Test_get_overlap(unittest.TestCase):
     def test_within(self):
         self.assertEqual(exonphaser.get_overlap([1,5], [100, 104]), (100, 104))
@@ -266,12 +282,17 @@ class Test_phaser(unittest.TestCase):
             ['s1', '.', 'CDS', '600', '603', '.', '+', '.', 'ID=a.1.c3'],
             ['s1', '.', 'exon', '910', '930', '.', '+', '.', 'ID=a.1.e5']
         ]
-        self.gff = ['\t'.join(x) for x in self.gff]
 
-    # def test_single_exon(self):
-    #     # TODO make it work
-    #     self.assertEqual(list(exonphaser.phaser(self.gff, ["a.1 z 1 2"])),
-    #                      [('z', 'a.1', 2, '+', 110, 200, 150, 155)])
+    def test_single_exon(self):
+        self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 2"]),
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 155)])
+
+    def test_bad_interval(self):
+        self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z 0   1\n"])
+        self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z 1   0\n"])
+        self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z 0.1 1\n"])
+        self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z -1  1\n"])
+        self.assertRaises(SystemExit, exonphaser.Intervals, ["a.1 z a   1\n"])
 
 
 if __name__ == '__main__':
