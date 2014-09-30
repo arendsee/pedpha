@@ -36,14 +36,6 @@ class Intervals:
         except KeyError:
             return(None)
 
-def to_dna_interval(x):
-    '''
-    x is an interval (x1, x2) on a protein
-    Where x1 and x2 are integers greater than 0 and x2 >= x1
-    '''
-    x = [(i - 1)*3 + 1 for i in x]
-    x[1] += 2
-    return(x)
 
 def parse(argv=None):
     parser = argparse.ArgumentParser()
@@ -67,6 +59,15 @@ def parse(argv=None):
     args = parser.parse_args(argv)
 
     return(args)
+
+def to_dna_interval(x):
+    '''
+    x is an interval (x1, x2) on a protein
+    Where x1 and x2 are integers greater than 0 and x2 >= x1
+    '''
+    x = [(i - 1)*3 + 1 for i in x]
+    x[1] += 2
+    return(x)
 
 def get_overlap(x, y):
     '''
@@ -127,5 +128,12 @@ def phaser(gff, intervals, delimiter=None):
 if __name__ == '__main__':
     args = parse()
 
-    for row in phaser(args.gff, args.intervals):
-        print("%s %s %s %s %d %d %d %d" % row)
+    gff = args.gff if args.gff else sys.stdin
+
+    if not args.intervals:
+        for gene in reader.gff_reader(gff):
+            for line in gene.tostr():
+                print(line)
+    else:
+        for row in phaser(gff, args.intervals):
+            print("%s %s %s %s %d %d %d %d" % row)
