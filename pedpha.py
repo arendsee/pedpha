@@ -130,9 +130,6 @@ def phaser(gff, intervals, delimiter=None):
 
                 bounds = [x - cds_length for x in bounds]
 
-                if b and b <= exon.bounds[1]:
-                    break
-
 
 if __name__ == '__main__':
     args = parse()
@@ -145,4 +142,4 @@ if __name__ == '__main__':
                 print(line)
     else:
         for row in phaser(gff, args.intervals):
-            print("%s %s %s %s %d %d %d %d" % row)
+            print("%s %s %s %s %d %d %d %d %s" % row)
