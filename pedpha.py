@@ -105,6 +105,7 @@ def phaser(gff, intervals, delimiter=None):
     inter = Intervals(intervals, delimiter)
     for gene in reader.gff_reader(gff):
         for mrna in gene.mRNAs:
+            mrna.calculate_phases()
             bounds = inter.get_bounds(mrna.ident)
             if not bounds:
                 continue
@@ -129,6 +130,9 @@ def phaser(gff, intervals, delimiter=None):
                           )
 
                 bounds = [x - cds_length for x in bounds]
+
+                if bounds[1] < 1:
+                    break
 
 
 if __name__ == '__main__':

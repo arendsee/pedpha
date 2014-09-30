@@ -270,7 +270,14 @@ class Test_phaser(unittest.TestCase):
 
     def test_single_exon(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 2"]),
-                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, ".-.")])
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, ".-0")])
+        self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 17"]),
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 200, ".-0")])
+
+    def test_multi_exon(self):
+        self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 18"]),
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 200, ".-0"),
+                          ('z', 'a.1', 3, '+', 300, 400, 300, 302, "0-2")])
 
     def test_bad_interval(self):
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z 0   1\n"])
