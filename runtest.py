@@ -268,11 +268,21 @@ class Test_phaser(unittest.TestCase):
             ['s1', '.', 'exon', '910', '930', '.', '+', '.', 'ID=a.1.e5']
         ]
 
-    def test_single_exon(self):
+    def test_single_exon1(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 2"]),
                          [('z', 'a.1', 2, '+', 110, 200, 150, 155, ".-0")])
+
+    def test_single_exon2(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 17"]),
                          [('z', 'a.1', 2, '+', 110, 200, 150, 200, ".-0")])
+
+    def test_single_exon3(self):
+        self.assertEqual(ready_phaser(self.gff, ["a.1 z 18 20"]),
+                         [('z', 'a.1', 3, '+', 300, 400, 300, 308, "0-2")])
+
+    def test_single_exon4(self):
+        self.assertEqual(ready_phaser(self.gff, ["a.1 z 19 20"]),
+                         [('z', 'a.1', 3, '+', 300, 400, 303, 308, "0-2")])
 
     def test_multi_exon(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 18"]),

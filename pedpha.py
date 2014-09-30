@@ -113,8 +113,6 @@ def phaser(gff, intervals, delimiter=None):
                 if not exon.CDS:
                     continue
 
-                cds_length = exon.CDS.bounds[1] - exon.CDS.bounds[0] + 1
-
                 a,b = get_overlap(bounds, exon.CDS.bounds)
 
                 if a and b:
@@ -129,7 +127,9 @@ def phaser(gff, intervals, delimiter=None):
                            '%s-%s' % exon.phase
                           )
 
-                bounds = [x - cds_length for x in bounds]
+                cds_length = exon.CDS.bounds[1] - exon.CDS.bounds[0] + 1
+                bounds[0] = 1 if (a and b) else bounds[0] - cds_length
+                bounds[1] -= cds_length
 
                 if bounds[1] < 1:
                     break
