@@ -63,7 +63,7 @@ def parse(argv=None):
         metavar="DEL"
     )
     parser.add_argument(
-        '-c', '--domain-classifications',
+        '-c', '--classify-domains',
         help="""Write domain classifications to this file.
                 Assume input intervals are protein domains and classify them as follows:
                 Class 1 - domain is on a single exon;
@@ -71,8 +71,8 @@ def parse(argv=None):
                 Class 3 - domain is shares its exon with other domains;
                 Class 4 - no clear relationship.
                 This classification and my general methods are based on (Kaesmann, Zöllner 2002)""",
-        metavar='DOM',
-        type=argparse.FileType('w')
+        action='store_true',
+        default=False
     )
 
     args = parser.parse_args(argv)
@@ -164,21 +164,27 @@ def phaser(gff, intervals, delimiter=None):
                     if bounds[1] < 1:
                         break
 
+def domain_classifier():
+    pass
+
 
 if __name__ == '__main__':
     args = parse()
 
     gff = args.gff if args.gff else sys.stdin
 
-    if not args.intervals:
+    if args.intervals:
+        if args.classify_domains:
+            domains = collections.defaultdict(list)
+            for row in phaser(gff, args.intervals):
+                key = tuple(row[0:4])
+                val = (tuple(row[6:8]), tuple(row[8:10]))
+                print(key, val)
+            print("WHY THE HELL IS THIS GOING BACKWARDS????!!!!")
+        else:
+            for row in phaser(gff, args.intervals):
+                print("%s %s %s %s %s %d %d %d %d %d %d %s" % row)
+    else:
         for gene in reader.gff_reader(gff):
             for line in gene.tostr():
                 print(line)
-    else:
-        if not args.domain_classifications:
-            for row in phaser(gff, args.intervals):
-                print("%s %s %s %s %s %d %d %d %d %d %d %s" % row)
-        else:
-            domains = collections.defaultdict(list)
-            for row in phaser(gff, args.intervals):
-                pass
