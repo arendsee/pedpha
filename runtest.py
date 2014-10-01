@@ -315,45 +315,46 @@ class Test_phaser(unittest.TestCase):
 
     def test_single_exon1(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 2"]),
-                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, ".-0")])
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, 1, 6, ".-0")])
 
     def test_single_exon2(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 17"]),
-                         [('z', 'a.1', 2, '+', 110, 200, 150, 200, ".-0")])
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 200, 1, 51, ".-0")])
 
     def test_single_exon3(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 18 20"]),
-                         [('z', 'a.1', 3, '+', 300, 400, 300, 308, "0-2")])
+                         [('z', 'a.1', 3, '+', 300, 400, 300, 308, 52, 60, "0-2")])
 
     def test_single_exon4(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 19 20"]),
-                         [('z', 'a.1', 3, '+', 300, 400, 303, 308, "0-2")])
+                         [('z', 'a.1', 3, '+', 300, 400, 303, 308, 55, 60, "0-2")])
 
     def test_multi_exon(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 18"]),
-                         [('z', 'a.1', 2, '+', 110, 200, 150, 200, ".-0"),
-                          ('z', 'a.1', 3, '+', 300, 400, 300, 302, "0-2")])
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 200, 1, 51, ".-0"),
+                          ('z', 'a.1', 3, '+', 300, 400, 300, 302, 52, 54, "0-2")])
 
     def test_multi_gene_one_interval(self):
         self.assertEqual(ready_phaser(self.multigene, ['b.1 z 1 2']),
-                         [('z', 'b.1', 2, '+', 5110, 5200, 5150, 5155, ".-0")])
+                         [('z', 'b.1', 2, '+', 5110, 5200, 5150, 5155, 1, 6, ".-0")])
 
     def test_multi_gene_two_intervals(self):
         self.assertEqual(ready_phaser(self.multigene, ["a.1 z 1 2", 'b.1 z 1 2']),
-                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, ".-0"),
-                          ('z', 'b.1', 2, '+', 5110, 5200, 5150, 5155, ".-0")])
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, 1, 6, ".-0"),
+                          ('z', 'b.1', 2, '+', 5110, 5200, 5150, 5155, 1, 6, ".-0")])
 
     def test_multi_mRNA(self):
         self.assertEqual(ready_phaser(self.multigene, ['b.2 z 1 2']),
-                         [('z', 'b.2', 2, '+', 5210, 5300, 5250, 5255, ".-0")])
+                         [('z', 'b.2', 2, '+', 5210, 5300, 5250, 5255, 1, 6, ".-0")])
 
     def test_minus(self):
         self.assertEqual(ready_phaser(self.minus, ["a.1 z 1 2"]),
-                         [('z', 'a.1', 2, '-', 600, 700, 645, 650, ".-0")])
+                         [('z', 'a.1', 2, '-', 600, 700, 645, 650, 1, 6, ".-0")])
+
     def test_multi_exon_minus(self):
         self.assertEqual(ready_phaser(self.minus, ["a.1 z 2 18"]),
-                         [('z', 'a.1', 2, '-', 600, 700, 600, 647, ".-0"),
-                          ('z', 'a.1', 3, '-', 400, 500, 498, 500, "0-2")])
+                         [('z', 'a.1', 2, '-', 600, 700, 600, 647, 4, 51, ".-0"),
+                          ('z', 'a.1', 3, '-', 400, 500, 498, 500, 52, 54, "0-2")])
 
     def test_bad_interval(self):
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z 0   1\n"])

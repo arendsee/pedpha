@@ -115,25 +115,32 @@ def phaser(gff, intervals, delimiter=None):
             bounds = inter.get_bounds(mrna.ident)
             if not bounds:
                 continue
+            total, cds_length = 0, 0
             for exon in mrna.exons:
                 if not exon.CDS:
                     continue
 
-                a,b = get_overlap(bounds, exon.CDS.bounds, gene.strand == "-")
+                a,b = get_overlap(bounds, exon.CDS.bounds, bool(gene.strand == "-"))
 
                 if a and b:
+                    if gene.strand == "+":
+                        ca, cb = sorted(i - exon.CDS.bounds[0] + total + 1 for i in (a,b))
+                    else:
+                        ca, cb = sorted(exon.CDS.bounds[1] - i + total + 1 for i in (a,b))
+
                     yield (inter.get_ident(mrna.ident),
                            mrna.ident,
                            exon.num,
                            gene.strand,
                            exon.bounds[0],
                            exon.bounds[1],
-                           a,
-                           b,
+                           a, b,
+                           ca, cb,
                            '%s-%s' % exon.phase
                           )
 
                 cds_length = exon.CDS.bounds[1] - exon.CDS.bounds[0] + 1
+                total += cds_length
                 bounds[0] = 1 if (a and b) else bounds[0] - cds_length
                 bounds[1] -= cds_length
 
@@ -152,4 +159,4 @@ if __name__ == '__main__':
                 print(line)
     else:
         for row in phaser(gff, args.intervals):
-            print("%s %s %s %s %d %d %d %d %s" % row)
+            print("%s %s %s %s %d %d %d %d %d %d %s" % row)
