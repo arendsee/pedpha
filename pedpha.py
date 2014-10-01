@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import lib.gffreader as reader
 import sys
 import argparse
+import collections
 
 __version__ = "1.2.0"
 
@@ -11,13 +13,16 @@ class Intervals:
         self.intervals = self._read_data(data, delimiter)
 
     def _read_data(self, data, delimiter):
-        out = dict()
+        out = collections.defaultdict(list)
         for line in data:
             row = line.split(delimiter)
             try:
-                out[row[0]] = row[1:4]
-                out[row[0]][1:3] = [int(s) for s in out[row[0]][1:3]]
-                if any([x < 1 for x in out[row[0]][1:3]]):
+                seqid, domid = row[0:2]
+                start, stop = (int(s) for s in row[2:4])
+                bounds = to_dna_interval(sorted([start, stop]))
+                value = (domid, bounds)
+                out[seqid].append(value)
+                if start < 1 or stop < 1:
                     raise ValueError
             except IndexError:
                 sys.exit("Each interval line must have 4 columns")
@@ -27,17 +32,10 @@ class Intervals:
 
     def get_bounds(self, ident):
         try:
-            bounds = sorted(to_dna_interval(self.intervals[ident][1:3]))
-            return(bounds)
+            for val in self.intervals[ident]:
+                yield val
         except KeyError:
-            return(None)
-
-    def get_ident(self, ident):
-        try:
-            return(self.intervals[ident][0])
-        except KeyError:
-            return(None)
-
+            yield None
 
 def parse(argv=None):
     parser = argparse.ArgumentParser(prog='pedpha')
@@ -68,6 +66,7 @@ def parse(argv=None):
     args = parser.parse_args(argv)
 
     return(args)
+
 
 def to_dna_interval(x):
     '''
@@ -112,40 +111,41 @@ def phaser(gff, intervals, delimiter=None):
     for gene in reader.gff_reader(gff):
         for mrna in gene.mRNAs:
             mrna.calculate_phases()
-            bounds = inter.get_bounds(mrna.ident)
-            if not bounds:
-                continue
-            total, cds_length = 0, 0
-            for exon in mrna.exons:
-                if not exon.CDS:
+            for domid, bounds in inter.get_bounds(mrna.ident):
+                if not bounds:
                     continue
+                total, cds_length = 0, 0
+                for exon in mrna.exons:
+                    if not exon.CDS:
+                        continue
 
-                a,b = get_overlap(bounds, exon.CDS.bounds, bool(gene.strand == "-"))
+                    a,b = get_overlap(bounds, exon.CDS.bounds, bool(gene.strand == "-"))
 
-                if a and b:
-                    if gene.strand == "+":
-                        ca, cb = sorted(i - exon.CDS.bounds[0] + total + 1 for i in (a,b))
-                    else:
-                        ca, cb = sorted(exon.CDS.bounds[1] - i + total + 1 for i in (a,b))
+                    if a and b:
+                        if gene.strand == "+":
+                            ca, cb = sorted(i - exon.CDS.bounds[0] + total + 1 for i in (a,b))
+                        else:
+                            ca, cb = sorted(exon.CDS.bounds[1] - i + total + 1 for i in (a,b))
 
-                    yield (inter.get_ident(mrna.ident),
-                           mrna.ident,
-                           exon.num,
-                           gene.strand,
-                           exon.bounds[0],
-                           exon.bounds[1],
-                           a, b,
-                           ca, cb,
-                           '%s-%s' % exon.phase
-                          )
+                        yield (
+                            domid,
+                            mrna.ident,
+                            exon.num,
+                            gene.strand,
+                            exon.bounds[0],
+                            exon.bounds[1],
+                            a, b,
+                            ca, cb,
+                            '%s-%s' % exon.phase
+                            )
 
-                cds_length = exon.CDS.bounds[1] - exon.CDS.bounds[0] + 1
-                total += cds_length
-                bounds[0] = 1 if (a and b) else bounds[0] - cds_length
-                bounds[1] -= cds_length
+                    cds_length = exon.CDS.bounds[1] - exon.CDS.bounds[0] + 1
+                    total += cds_length
+                    bounds[0] = 1 if (a and b) else bounds[0] - cds_length
+                    bounds[1] -= cds_length
 
-                if bounds[1] < 1:
-                    break
+                    if bounds[1] < 1:
+                        break
 
 
 if __name__ == '__main__':

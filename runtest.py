@@ -372,6 +372,11 @@ class Test_phaser(unittest.TestCase):
                          [('z', 'a.1', 2, '+', 110, 200, 150, 155, 1, 6, ".-0"),
                           ('z', 'b.1', 2, '+', 5110, 5200, 5150, 5155, 1, 6, ".-0")])
 
+    def test_multi_gene_two_intervals_one_mRNA(self):
+        self.assertEqual(ready_phaser(self.multigene, ["a.1 z 1 2", "a.1 z 4 5"]),
+                         [('z', 'a.1', 2, '+', 110, 200, 150, 155, 1, 6, ".-0"),
+                          ('z', 'a.1', 2, '+', 110, 200, 159, 164, 10, 15, ".-0")])
+
     def test_multi_mRNA(self):
         self.assertEqual(ready_phaser(self.multigene, ['b.2 z 1 2']),
                          [('z', 'b.2', 2, '+', 5210, 5300, 5250, 5255, 1, 6, ".-0")])
@@ -391,7 +396,6 @@ class Test_phaser(unittest.TestCase):
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z 0.1 1\n"])
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z -1  1\n"])
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z a   1\n"])
-
 
 class Test_to_dna_coor(unittest.TestCase):
     def test_equal(self):
