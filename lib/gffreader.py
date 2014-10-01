@@ -85,6 +85,20 @@ def gff_reader(gfffile, errout=sys.stderr):
     if fc.check_gene(g):
         yield g
 
+def phase(ebounds, cbounds, offset, isplus):
+    estart, estop = ebounds if isplus else reversed(ebounds)
+    cstart, cstop = cbounds if isplus else reversed(cbounds)
+    new_length = offset + abs(cstop - cstart) + 1
+    if cstart == estart:
+        p5 = offset % 3
+    else:
+        p5 = "."
+
+    if cstop == estop:
+        p3 = new_length % 3
+    else:
+        p3 = "."
+    return(p5, p3)
 
 class Gene:
     def __init__(self, ident, seqid, bounds, strand):
@@ -130,24 +144,12 @@ class mRNA:
         self.exons.append(exon)
 
     def calculate_phases(self):
-        cds_length = 0
+        offset = 0
         isplus = bool(self.strand == "+")
         for exon in self.exons:
             if exon.CDS:
-                estart, estop = exon.bounds if isplus else reversed(exon.bounds)
-                cstart, cstop = exon.CDS.bounds if isplus else reversed(exon.CDS.bounds)
-                new_length = cds_length + abs(cstop - cstart) + 1
-                if cstart == estart:
-                    p5 = cds_length % 3
-                else:
-                    p5 = "."
-
-                if cstop == estop:
-                    p3 = new_length % 3
-                else:
-                    p3 = "."
-                exon.phase = (p5, p3)
-                cds_length = new_length
+                exon.phase = phase(exon.bounds, exon.CDS.bounds, offset, isplus)
+                offset += abs(exon.CDS.bounds[1] - exon.CDS.bounds[0]) + 1
 
 class Exon:
     def __init__(self, ident, bounds, num=None):

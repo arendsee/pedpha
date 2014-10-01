@@ -80,6 +80,35 @@ class Test_gffreader(unittest.TestCase):
     def test_minus(self):
         self.assertEqual(readgff(self.minus), self.minus_output)
 
+class Test_phase(unittest.TestCase):
+    def test_same_interval_0_offset(self):
+        self.assertEqual(gffreader.phase((1,6), (1,6), 0, True), (0,0))
+        self.assertEqual(gffreader.phase((1,7), (1,7), 0, True), (0,1))
+        self.assertEqual(gffreader.phase((1,8), (1,8), 0, True), (0,2))
+        self.assertEqual(gffreader.phase((4,11), (4,11), 0, True), (0,2))
+        self.assertEqual(gffreader.phase((4,14), (4,14), 0, True), (0,2))
+
+    def test_same_interval_variable_offset(self):
+        self.assertEqual(gffreader.phase((1,7), (1,7), 0, True), (0,1))
+        self.assertEqual(gffreader.phase((1,7), (1,7), 1, True), (1,2))
+        self.assertEqual(gffreader.phase((1,7), (1,7), 2, True), (2,0))
+        self.assertEqual(gffreader.phase((1,7), (1,7), 3, True), (0,1))
+        self.assertEqual(gffreader.phase((1,7), (1,7), 432, True), (0,1))
+        self.assertEqual(gffreader.phase((1,7), (1,7), 433, True), (1,2))
+        self.assertEqual(gffreader.phase((1,7), (1,7), 434, True), (2,0))
+        self.assertEqual(gffreader.phase((31,37), (31,37), 434, True), (2,0))
+
+    def test_borders_plus(self):
+        self.assertEqual(gffreader.phase((1,100), (91,100), 0, True), (".",1))
+        self.assertEqual(gffreader.phase((1,100), (50,61), 0, True), (".","."))
+        self.assertEqual(gffreader.phase((400,500), (400,411), 1, True), (1,"."))
+
+    def test_borders_minus(self):
+        self.assertEqual(gffreader.phase((1,100), (91,100), 0, False), (0,"."))
+        self.assertEqual(gffreader.phase((1,100), (50,61), 0, False), (".","."))
+        self.assertEqual(gffreader.phase((400,500), (400,411), 0, False), (".",0))
+        self.assertEqual(gffreader.phase((400,500), (400,412), 0, False), (".",1))
+
 class Test_a_is_downstream_of_b(unittest.TestCase):
     def test_true_plus(self):
         self.assertTrue(gffreader.a_is_downstream_of_b(a=2, b=1, strand="+"))
