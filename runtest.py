@@ -300,6 +300,19 @@ class Test_phaser(unittest.TestCase):
             ['s2', '.', 'exon', '5910', '5930', '.', '+', '.', 'ID=b.2.e5']
         ]
 
+        self.minus = [
+            ['s1', '.', 'gene', '1',   '1000', '.', '-', '.', 'ID=a'],
+            ['s1', '.', 'mRNA', '1',   '1000', '.', '-', '.', 'ID=a.1'],
+            ['s1', '.', 'exon', '800', '900',  '.', '-', '.', 'ID=a.1.exon.1'],
+            ['s1', '.', 'exon', '600', '700',  '.', '-', '.', 'ID=a.1.exon.2'],
+            ['s1', '.', 'CDS',  '600', '650',  '.', '-', '.', 'ID=a.1.cds.1'],
+            ['s1', '.', 'exon', '400', '500',  '.', '-', '.', 'ID=a.1.exon.3'],
+            ['s1', '.', 'CDS',  '400', '500',  '.', '-', '.', 'ID=a.1.cds.2'],
+            ['s1', '.', 'exon', '200', '300',  '.', '-', '.', 'ID=a.1.exon.4'],
+            ['s1', '.', 'CDS',  '297', '300',  '.', '-', '.', 'ID=a.1.cds.2'],
+            ['s1', '.', 'exon', '10',  '150',  '.', '-', '.', 'ID=a.1.exon.5']
+        ]
+
     def test_single_exon1(self):
         self.assertEqual(ready_phaser(self.gff, ["a.1 z 1 2"]),
                          [('z', 'a.1', 2, '+', 110, 200, 150, 155, ".-0")])
@@ -333,6 +346,10 @@ class Test_phaser(unittest.TestCase):
     def test_multi_mRNA(self):
         self.assertEqual(ready_phaser(self.multigene, ['b.2 z 1 2']),
                          [('z', 'b.2', 2, '+', 5210, 5300, 5250, 5255, ".-0")])
+
+    def test_minus(self):
+        self.assertEqual(ready_phaser(self.minus, ["a.1 z 1 2"]),
+                         [('z', 'a.1', 2, '-', 600, 700, 645, 650, ".-0")])
 
     def test_bad_interval(self):
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z 0   1\n"])
