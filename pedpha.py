@@ -62,6 +62,23 @@ def parse(argv=None):
         help="INTER file delimiter (defaults to whitespace)",
         metavar="DEL"
     )
+    parser.add_argument(
+        '-c', '--domain-classifications',
+        help="""Write domain classifications to this file.
+                Assume input intervals are protein domains and classify them as follows:
+                Class 1 - domain is on a single exon;
+                Class 2 - domain is spread across multiple exons;
+                Class 3 - domain is shares its exon with other domains;
+                Class 4 - no clear relationship.
+                This classification and my general methods are based on (Kaesmann, Zöllner 2002)""",
+        metavar='DOM',
+        type=argparse.FileType('w')
+    )
+
+    args = parser.parse_args(argv)
+
+    return(args)
+
 
 def to_dna_interval(x):
     '''
@@ -158,5 +175,10 @@ if __name__ == '__main__':
             for line in gene.tostr():
                 print(line)
     else:
-        for row in phaser(gff, args.intervals):
-            print("%s %s %s %s %s %d %d %d %d %d %d %s" % row)
+        if not args.domain_classifications:
+            for row in phaser(gff, args.intervals):
+                print("%s %s %s %s %s %d %d %d %d %d %d %s" % row)
+        else:
+            domains = collections.defaultdict(list)
+            for row in phaser(gff, args.intervals):
+                pass
