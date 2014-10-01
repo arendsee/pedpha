@@ -4,7 +4,7 @@ import lib.gffreader as reader
 import sys
 import argparse
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 class Intervals:
     def __init__(self, data, delimiter=None):
