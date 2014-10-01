@@ -350,6 +350,10 @@ class Test_phaser(unittest.TestCase):
     def test_minus(self):
         self.assertEqual(ready_phaser(self.minus, ["a.1 z 1 2"]),
                          [('z', 'a.1', 2, '-', 600, 700, 645, 650, ".-0")])
+    def test_multi_exon_minus(self):
+        self.assertEqual(ready_phaser(self.minus, ["a.1 z 2 18"]),
+                         [('z', 'a.1', 2, '-', 600, 700, 600, 647, ".-0"),
+                          ('z', 'a.1', 3, '-', 400, 500, 498, 500, "0-2")])
 
     def test_bad_interval(self):
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z 0   1\n"])
@@ -358,22 +362,37 @@ class Test_phaser(unittest.TestCase):
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z -1  1\n"])
         self.assertRaises(SystemExit, pedpha.Intervals, ["a.1 z a   1\n"])
 
+
 class Test_to_dna_coor(unittest.TestCase):
     def test_equal(self):
         self.assertEqual(pedpha.to_dna_interval([1,1]), [1,3])
         self.assertEqual(pedpha.to_dna_interval([1,2]), [1,6])
         self.assertEqual(pedpha.to_dna_interval([2,3]), [4,9])
 class Test_get_overlap(unittest.TestCase):
-    def test_within(self):
-        self.assertEqual(pedpha.get_overlap([1,5], [100, 104]), (100, 104))
-        self.assertEqual(pedpha.get_overlap([1,4], [100, 104]), (100, 103))
-        self.assertEqual(pedpha.get_overlap([2,4], [100, 104]), (101, 103))
-        self.assertEqual(pedpha.get_overlap([2,2], [100, 104]), (101, 101))
-    def test_rightwards(self):
-        self.assertEqual(pedpha.get_overlap([1,10], [100, 104]), (100, 104))
-        self.assertEqual(pedpha.get_overlap([5,10], [100, 104]), (104, 104))
-    def test_beyond(self):
-        self.assertEqual(pedpha.get_overlap([6,10], [100, 104]), (None, None))
+    def test_within_plus(self):
+        self.assertEqual(pedpha.get_overlap([1,5], [100, 104], minus=False), (100, 104))
+        self.assertEqual(pedpha.get_overlap([1,4], [100, 104], minus=False), (100, 103))
+        self.assertEqual(pedpha.get_overlap([2,4], [100, 104], minus=False), (101, 103))
+        self.assertEqual(pedpha.get_overlap([2,2], [100, 104], minus=False), (101, 101))
+    def test_within_minus_equal(self):
+        self.assertEqual(pedpha.get_overlap([1,5], [100, 104], minus=True), (100, 104))
+    def test_within_minus_within_low(self):
+        self.assertEqual(pedpha.get_overlap([1,4], [100, 104], minus=True), (101, 104))
+    def test_within_minus_within_mid(self):
+        self.assertEqual(pedpha.get_overlap([2,4], [100, 104], minus=True), (101, 103))
+        self.assertEqual(pedpha.get_overlap([2,2], [100, 104], minus=True), (103, 103))
+
+    def test_rightwards_plus(self):
+        self.assertEqual(pedpha.get_overlap([1,10], [100, 104], minus=False), (100, 104))
+        self.assertEqual(pedpha.get_overlap([5,10], [100, 104], minus=False), (104, 104))
+    def test_rightwards_minus(self):
+        self.assertEqual(pedpha.get_overlap([1,10], [100, 104], minus=True), (100, 104))
+        self.assertEqual(pedpha.get_overlap([5,10], [100, 104], minus=True), (100, 100))
+
+    def test_beyond_plus(self):
+        self.assertEqual(pedpha.get_overlap([6,10], [100, 104], minus=False), (None, None))
+    def test_beyond_minus(self):
+        self.assertEqual(pedpha.get_overlap([6,10], [100, 104], minus=True), (None, None))
 
 
 if __name__ == '__main__':

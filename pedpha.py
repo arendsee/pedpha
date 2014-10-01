@@ -78,28 +78,34 @@ def to_dna_interval(x):
     x[1] += 2
     return(x)
 
-def get_overlap(x, y):
+def get_overlap(x, y, minus=False):
     '''
-    (x1, x2) and (y1, y2) define two intervals on the positive integer line
-    where x2 >= x1 and y2 >= y1
-    The y interval is shifted rightwards by a constant
-    z is a normalized vector, i.e. z = (z1 + y1, z2 + y2)
-    the output (a,b) is the overlap between z and y
+    @param x: indices for an interval numbered relative to y
+    @param y: a positive integer interval (greater than 0)
+    @returns: overlap
     '''
+    if minus:
+        a, b = [y[1] - xi + 1 for xi in x]
 
-    z = [xi + y[0] - 1 for xi in x]
 
-    a = z[0]
-    if a > y[1]:
-        return (None, None)
+        if a < y[0]:
+            return (None, None)
 
-    # Set end of exon match to max
-    if z[1] >= y[1]:
-        b = y[1]
+        if b <= y[0]:
+            b = y[0]
+
+        return((b,a))
+
     else:
-        b = z[1]
+        a,b = [xi + y[0] - 1 for xi in x]
 
-    return((a,b))
+        if a > y[1]:
+            return (None, None)
+
+        if b >= y[1]:
+            b = y[1]
+
+        return((a,b))
 
 def phaser(gff, intervals, delimiter=None):
     inter = Intervals(intervals, delimiter)
@@ -113,7 +119,7 @@ def phaser(gff, intervals, delimiter=None):
                 if not exon.CDS:
                     continue
 
-                a,b = get_overlap(bounds, exon.CDS.bounds)
+                a,b = get_overlap(bounds, exon.CDS.bounds, gene.strand == "-")
 
                 if a and b:
                     yield (inter.get_ident(mrna.ident),
