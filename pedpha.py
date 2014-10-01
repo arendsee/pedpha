@@ -63,11 +63,6 @@ def parse(argv=None):
         metavar="DEL"
     )
 
-    args = parser.parse_args(argv)
-
-    return(args)
-
-
 def to_dna_interval(x):
     '''
     x is an interval (x1, x2) on a protein
@@ -110,10 +105,14 @@ def phaser(gff, intervals, delimiter=None):
     inter = Intervals(intervals, delimiter)
     for gene in reader.gff_reader(gff):
         for mrna in gene.mRNAs:
+            # TODO this should be automatic
             mrna.calculate_phases()
+            domcount = collections.Counter()
             for domid, bounds in inter.get_bounds(mrna.ident):
+                # Undefined when no interval maps to the current mRNA
                 if not bounds:
                     continue
+                domcount[domid] += 1
                 total, cds_length = 0, 0
                 for exon in mrna.exons:
                     if not exon.CDS:
@@ -128,9 +127,10 @@ def phaser(gff, intervals, delimiter=None):
                             ca, cb = sorted(exon.CDS.bounds[1] - i + total + 1 for i in (a,b))
 
                         yield (
-                            domid,
                             mrna.ident,
                             exon.num,
+                            domid,
+                            domcount[domid],
                             gene.strand,
                             exon.bounds[0],
                             exon.bounds[1],
@@ -159,4 +159,4 @@ if __name__ == '__main__':
                 print(line)
     else:
         for row in phaser(gff, args.intervals):
-            print("%s %s %s %s %d %d %d %d %d %d %s" % row)
+            print("%s %s %s %s %s %d %d %d %d %d %d %s" % row)
