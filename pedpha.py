@@ -8,34 +8,6 @@ import collections
 
 __version__ = "1.2.0"
 
-class Intervals:
-    def __init__(self, data, delimiter=None):
-        self.intervals = self._read_data(data, delimiter)
-
-    def _read_data(self, data, delimiter):
-        out = collections.defaultdict(list)
-        for line in data:
-            row = line.split(delimiter)
-            try:
-                seqid, domid = row[0:2]
-                start, stop = (int(s) for s in row[2:4])
-                bounds = to_dna_interval(sorted([start, stop]))
-                value = (domid, bounds)
-                out[seqid].append(value)
-                if start < 1 or stop < 1:
-                    raise ValueError
-            except IndexError:
-                sys.exit("Each interval line must have 4 columns")
-            except ValueError:
-                sys.exit("Interval coordinants must be integers greater than 0")
-        return(out)
-
-    def get_bounds(self, ident):
-        try:
-            for val in self.intervals[ident]:
-                yield val
-        except KeyError:
-            yield None
 
 def parse(argv=None):
     parser = argparse.ArgumentParser(prog='pedpha')
@@ -78,7 +50,6 @@ def parse(argv=None):
     args = parser.parse_args(argv)
 
     return(args)
-
 
 def to_dna_interval(x):
     '''
@@ -164,8 +135,64 @@ def phaser(gff, intervals, delimiter=None):
                     if bounds[1] < 1:
                         break
 
-def domain_classifier():
-    pass
+
+class Intervals:
+    def __init__(self, data, delimiter=None):
+        self.intervals = self._read_data(data, delimiter)
+
+    def _read_data(self, data, delimiter):
+        out = collections.defaultdict(list)
+        for line in data:
+            row = line.split(delimiter)
+            try:
+                seqid, domid = row[0:2]
+                start, stop = (int(s) for s in row[2:4])
+                bounds = to_dna_interval(sorted([start, stop]))
+                value = (domid, bounds)
+                out[seqid].append(value)
+                if start < 1 or stop < 1:
+                    raise ValueError
+            except IndexError:
+                sys.exit("Each interval line must have 4 columns")
+            except ValueError:
+                sys.exit("Interval coordinants must be integers greater than 0")
+        return(out)
+
+    def get_bounds(self, ident):
+        try:
+            for val in self.intervals[ident]:
+                yield val
+        except KeyError:
+            yield None
+
+class ClassifyDomains:
+    def __init__(self, gff, intervals):
+        self.exon_occupancy = collections.defaultdict(set)
+        self.domains = collections.defaultdict(list)
+        self.classes = []
+        self._load_data(gff, intervals)
+        self._classify_domains()
+
+    def _classify_domain(self, data):
+        for key, val in self.domains.items():
+            seqid, domid, domnum = key
+            for exon_bounds, interval_bounds, phase in val:
+                # TODO implement this
+                pass
+
+
+
+    def _load_data(self, gff, intervals):
+        for row in phaser(gff, args.intervals):
+            seqid, exonnum, domid, domnum = row[0:4]
+            exon_bounds = tuple(row[5:7])
+            interval_bounds = tuple(row[7:11])
+            phase = row[11]
+            self.exon_occupancy[(seqid, exonnum)].update(domid)
+            self.domains[(seqid, domid, domnum)].append((exon_bounds, interval_bounds, phase))
+
+# 1st pass: Collect 1) domain exon occupancy 2) domain intervals and phases - once through
+# 2nd pass: yield domain info line by line
 
 
 if __name__ == '__main__':
@@ -175,12 +202,8 @@ if __name__ == '__main__':
 
     if args.intervals:
         if args.classify_domains:
-            domains = collections.defaultdict(list)
-            for row in phaser(gff, args.intervals):
-                key = tuple(row[0:4])
-                val = (tuple(row[6:8]), tuple(row[8:10]))
-                print(key, val)
-            print("WHY THE HELL IS THIS GOING BACKWARDS????!!!!")
+            cd = ClassifyDomains(gff, args.intervals)
+
         else:
             for row in phaser(gff, args.intervals):
                 print("%s %s %s %s %s %d %d %d %d %d %d %s" % row)
