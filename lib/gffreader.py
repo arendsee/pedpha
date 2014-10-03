@@ -8,43 +8,11 @@ this format should instantly kill the program. See README.
 import re
 import sys
 
-def a_is_downstream_of_b(a, b, strand):
-    if strand == "+":
-        return(a >= b)
-    else:
-        return(a <= b)
-
-def a_is_upstream_of_b(a, b, strand):
-    if strand == "+":
-        return(a <= b)
-    else:
-        return(a >= b)
-
-def a_is_within_b(a, b):
-    is_lowerbounded = bool(min(a) >= min(b) and min(a) <= max(b))
-    is_upperbounded = bool(max(a) <= max(b))
-    return(is_lowerbounded and is_upperbounded)
-
-def a_overlaps_b(a, b):
-    return(a_is_within_b([a[0]], b) or a_is_within_b([a[1]], b) or a_is_within_b(b, a))
-
 def parse_desc(desc):
     try:
         return(re.match('^ID=([^;]+).*', desc).group(1))
     except AttributeError:
         return(None)
-
-def line2gffdict(line):
-    row = line.split('\t')
-    if len(row) == 9:
-        out = dict(zip(
-            ['seqid', 'source', 'type', 'start', 'stop', 'score', 'strand', 'phase', 'desc'],
-            row
-        ))
-        out['bounds'] = sorted([int(out['start']), int(out['stop'])])
-    else:
-        out = None
-    return out
 
 def gff_reader(gfffile, errout=sys.stderr):
     g = None
@@ -85,99 +53,6 @@ def gff_reader(gfffile, errout=sys.stderr):
     if fc.check_gene(g):
         yield g
 
-def phase(ebounds, cbounds, offset, isplus):
-    estart, estop = ebounds if isplus else reversed(ebounds)
-    cstart, cstop = cbounds if isplus else reversed(cbounds)
-    new_length = offset + abs(cstop - cstart) + 1
-    if cstart == estart:
-        p5 = offset % 3
-    else:
-        p5 = "."
-
-    if cstop == estop:
-        p3 = new_length % 3
-    else:
-        p3 = "."
-    return(p5, p3)
-
-class Gene:
-    def __init__(self, ident, seqid, bounds, strand):
-        self.ident = ident
-        self.seqid = seqid
-        self.bounds = bounds
-        self.strand = strand
-        self.mRNAs = []
-
-    def tostr(self):
-        lines = []
-        for mrna in self.mRNAs:
-            lines += mrna.tostr(self)
-        return(lines)
-
-    def add_mRNA(self, mrna):
-        mrna.tid = mrna.tid if mrna.tid else len(self.mRNAs) + 1
-        self.mRNAs.append(mrna)
-
-class mRNA:
-    def __init__(self, ident, bounds, strand, tid=None):
-        self.ident = ident
-        self.bounds = bounds
-        self.strand = strand
-        self.tid = tid
-        self.exons = []
-
-    def tostr(self, gene):
-        self.calculate_phases()
-        template = '{} {} {} {} {} {} {{}}'.format(gene.seqid,
-                                                self.ident,
-                                                self.tid,
-                                                gene.bounds[0],
-                                                gene.bounds[1],
-                                                gene.strand)
-        lines = []
-        for exon in self.exons:
-            lines.append(template.format(exon.tostr()))
-        return(lines)
-
-    def add_exon(self, exon):
-        exon.num = exon.num if exon.num else len(self.exons) + 1
-        self.exons.append(exon)
-
-    def calculate_phases(self):
-        offset = 0
-        isplus = bool(self.strand == "+")
-        for exon in self.exons:
-            if exon.CDS:
-                exon.phase = phase(exon.bounds, exon.CDS.bounds, offset, isplus)
-                offset += abs(exon.CDS.bounds[1] - exon.CDS.bounds[0]) + 1
-
-class Exon:
-    def __init__(self, ident, bounds, num=None):
-        self.num = num
-        self.ident = ident
-        self.bounds = bounds
-        self.CDS = None
-        self.phase = (".", ".")
-
-    def tostr(self):
-        if self.CDS:
-            cstart, cstop = self.CDS.bounds
-        else:
-            cstart, cstop = ".", "."
-        out = " ".join(str(s) for s in (
-            self.num,
-            self.ident,
-            self.bounds[0],
-            self.bounds[1],
-            cstart,
-            cstop,
-            self.phase[0], self.phase[1]))
-        return out
-
-class CDS:
-    def __init__(self, ident, bounds):
-        self.ident = ident
-        self.bounds = bounds
 
 class FormatChecker:
     def __init__(self, errout=sys.stderr):
@@ -188,7 +63,6 @@ class FormatChecker:
         if line:
             warnmsg += "\n%s" % line
         print(warnmsg % msg, file=self.errout)
-
 
     def check_gene(self, g):
         valid = True
@@ -260,4 +134,3 @@ class FormatChecker:
             valid = False
 
         return(valid)
-
